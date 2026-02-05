@@ -8,12 +8,9 @@ services:
     healthCheckPath: /health
     envVars:
       - key: OLLAMA_API_URL
-        fromService:
-          name: ollama-server
-          type: pserv
-          property: hostport
+        value: "http://ollama-server:11434"
       - key: MODEL
-        value: flux:latest
+        value: "flux:latest"
       - key: PORT
         value: "5000"
 
@@ -28,6 +25,3 @@ services:
         value: "1"
       - key: OLLAMA_NUM_GPU
         value: "0"
-    volumes:
-      - name: ollama-models
-        mountPath: /root/.ollama

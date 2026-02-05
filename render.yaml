@@ -1,0 +1,33 @@
+services:
+  # Serviço 1: API Flask
+  - type: web
+    name: ollama-image-api
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: OLLAMA_API_URL
+        fromService:
+          name: ollama-server
+          type: pserv
+          property: hostport
+      - key: MODEL
+        value: flux:latest
+      - key: PORT
+        value: "5000"
+
+  # Serviço 2: Ollama (Private Service)
+  - type: pserv
+    name: ollama-server
+    env: docker
+    dockerfilePath: ollama/Dockerfile
+    plan: starter
+    envVars:
+      - key: OLLAMA_NUM_PARALLEL
+        value: "1"
+      - key: OLLAMA_NUM_GPU
+        value: "0"
+    volumes:
+      - name: ollama-models
+        mountPath: /root/.ollama

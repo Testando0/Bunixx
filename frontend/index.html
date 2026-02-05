@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 Ollama Image Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .image-container {
+            margin-top: 30px;
+            text-align: center;
+            display: none;
+        }
+
+        .image-container.show {
+            display: block;
+        }
+
+        .image-container img {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .download-btn {
+            background: #4CAF50;
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 0.95em;
+        }
+
+        .download-btn:hover {
+            box-shadow: 0 10px 25px rgba(76, 175, 80, 0.4);
+        }
+
+        .error {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: slideIn 0.3s ease-in;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            color: #1565c0;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Ollama Image Generator</h1>
+        <p class="subtitle">Gere imagens com IA gratuitamente</p>
+
+        <div class="info">
+            💡 <strong>Dica:</strong> Descreva a imagem em detalhes para melhores resultados. 
+            A primeira imagem pode levar 1-2 minutos.
+        </div>
+
+        <form id="generatorForm">
+            <div class="error" id="errorDiv"></div>
+
+            <div class="form-group">
+                <label for="prompt">O que deseja desenhar?</label>
+                <input 
+                    type="text" 
+                    id="prompt" 
+                    name="prompt"
+                    placeholder="ex: um gato cyberpunk em uma cidade futurista"
+                    required
+                >
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="width">Largura</label>
+                    <input type="number" id="width" name="width" value="1024" min="256" max="2048" step="256">
+                </div>
+                <div class="form-group">
+                    <label for="height">Altura</label>
+                    <input type="number" id="height" name="height" value="1024" min="256" max="2048" step="256">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="model">Modelo</label>
+                <select id="model" name="model">
+                    <option value="flux:latest">FLUX (Recomendado - Rápido)</option>
+                    <option value="stable-diffusion">Stable Diffusion (Alternativa)</option>
+                </select>
+            </div>
+
+            <button type="submit" id="generateBtn">🎨 Gerar Imagem</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">Gerando imagem...</div>
+            <div class="status" id="status"></div>
+        </div>
+
+        <div class="image-container" id="imageContainer">
+            <img id="generatedImage" alt="Imagem gerada">
+            <button class="download-btn" id="downloadBtn">⬇️ Download</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://bhjjii.onrender.com';
+        
+        const form = document.getElementById('generatorForm');
+        const promptInput = document.getElementById('prompt');
+        const widthInput = document.getElementById('width');
+        const heightInput = document.getElementById('height');
+        const modelInput = document.getElementById('model');
+        const generateBtn = document.getElementById('generateBtn');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const statusDiv = document.getElementById('status');
+        const imageContainer = document.getElementById('imageContainer');
+        const generatedImage = document.getElementById('generatedImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorDiv = document.getElementById('errorDiv');
+
+        // Verificar saúde da API ao carregar
+        window.addEventListener('load', checkApiHealth);
+
+        async function checkApiHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (!data.ollama_connected) {
+                        showError('⚠️ Ollama ainda está inicializando... Aguarde alguns minutos.');
+                    }
+                }
+            } catch (error) {
+                showError('⚠️ Não foi possível conectar à API. Verifique a URL.');
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await generateImage();
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.href = generatedImage.src;
+            link.download = `ollama-image-${Date.now()}.png`;
+            link.click();
+        });
+
+        async function generateImage() {
+            const prompt = promptInput.value.trim();
+            
+            if (!prompt) {
+                showError('❌ Digite um prompt para gerar a imagem');
+                return;
+            }
+
+            hideError();
+            loading.style.display = 'block';
+            imageContainer.classList.remove('show');
+            generateBtn.disabled = true;
+
+            try {
+                loadingText.textContent = 'Gerando imagem...';
+                statusDiv.textContent = 'Conectando ao servidor...';
+
+                const startTime = Date.now();
+                
+                const response = await fetch(`${API_URL}/api/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        width: parseInt(widthInput.value),
+                        height: parseInt(heightInput.value),
+                        model: modelInput.value
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Erro ao gerar imagem');
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                
+                generatedImage.src = url;
+                imageContainer.classList.add('show');
+
+                const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+                statusDiv.textContent = `✅ Gerada em ${duration}s`;
+
+            } catch (error) {
+                showError(`❌ Erro: ${error.message}`);
+                console.error(error);
+            } finally {
+                loading.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            errorDiv.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
